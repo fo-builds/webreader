@@ -5,6 +5,7 @@ from telethon import TelegramClient, events
 from reader import fetch
 from summarize import summarize
 from clocked_backend import extract_fields
+from ledger import meter
 from pdf import make_pdf
 from search import search as web_search
 
@@ -60,6 +61,7 @@ async def main():
                 r = await asyncio.to_thread(fetch, m.group(0))
                 body = r.get('text') or ''
                 res = await asyncio.to_thread(extract_fields, body, {n: "string" for n in names})
+                await asyncio.to_thread(meter, 'extract', ','.join(names))
                 if not res:
                     await event.reply("Clocked backend unavailable (set CLOCKED_API_KEY) - local fallback not wired for /extract")
                     return
@@ -78,6 +80,7 @@ async def main():
                     n = max(1, min(10, int(mm.group(1))))
                 r = await asyncio.to_thread(fetch, m.group(0))
                 bullets, backend = await asyncio.to_thread(summarize, r.get('text') or '', n)
+                await asyncio.to_thread(meter, 'summarize', title)
                 if isinstance(bullets, str):
                     body = bullets
                 else:
