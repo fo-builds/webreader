@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from telethon import TelegramClient, events
 from reader import fetch
 from summarize import summarize
+from clocked_backend import extract_fields
 from pdf import make_pdf
 from search import search as web_search
 
@@ -45,6 +46,25 @@ async def main():
                     return
                 res = await asyncio.to_thread(web_search, q)
                 await event.reply(fmt(res, q)[:4000] if res else "No results.")
+                return
+            if low.startswith("/extract"):
+                arg = text[len("/extract"):].strip()
+                m = URL_RE.search(arg)
+                if not m:
+                    await event.reply("send: /extract <url> field1 field2 ...")
+                    return
+                names = [w for w in re.sub(r'https?://\S+', ' ', arg).split() if w.isidentifier()]
+                if not names:
+                    await event.reply("name at least one field to extract")
+                    return
+                r = await asyncio.to_thread(fetch, m.group(0))
+                body = r.get('text') or ''
+                res = await asyncio.to_thread(extract_fields, body, {n: "string" for n in names})
+                if not res:
+                    await event.reply("Clocked backend unavailable (set CLOCKED_API_KEY) - local fallback not wired for /extract")
+                    return
+                lines = [f"{k}: {v['value']} ({v['confidence']:.3f})" for k, v in res.items()]
+                await event.reply((r.get('title') or m.group(0)) + "\n\n" + "\n".join(lines))
                 return
             if low.startswith("/summarize"):
                 arg = text[len("/summarize"):].strip()
