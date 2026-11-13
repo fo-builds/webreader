@@ -3,6 +3,7 @@ import asyncio, os, sys, time, re, html
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from telethon import TelegramClient, events
 from reader import fetch
+from summarize import summarize
 from pdf import make_pdf
 from search import search as web_search
 
@@ -44,6 +45,25 @@ async def main():
                     return
                 res = await asyncio.to_thread(web_search, q)
                 await event.reply(fmt(res, q)[:4000] if res else "No results.")
+                return
+            if low.startswith("/summarize"):
+                arg = text[len("/summarize"):].strip()
+                m = URL_RE.search(arg)
+                if not m:
+                    await event.reply("send: /summarize <url> [n]")
+                    return
+                n = 5
+                mm = re.search(r'\b(\d+)\b', arg[:m.start()])
+                if mm:
+                    n = max(1, min(10, int(mm.group(1))))
+                r = await asyncio.to_thread(fetch, m.group(0))
+                bullets, backend = await asyncio.to_thread(summarize, r.get('text') or '', n)
+                if isinstance(bullets, str):
+                    body = bullets
+                else:
+                    body = "\n".join(f"- {b}" for b in bullets)
+                title = r.get('title') or m.group(0)
+                await event.reply(f"{title}\n\n{body}\n\n({backend})"[:4000])
                 return
             if low.startswith("/pdf"):
                 m = URL_RE.search(text[4:] or "")
