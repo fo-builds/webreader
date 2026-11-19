@@ -32,9 +32,19 @@ class Handler(BaseHTTPRequestHandler):
         u = urlparse(self.path)
         q = parse_qs(u.query)
         try:
-            if u.path == "/read":
+            if u.path in ("/", "/index.html"):
+                with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html"), "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            elif u.path == "/read":
                 r = fetch(q["url"][0])
-                self._json({"title": r["title"], "text": r["text"], "links": r["links"][:80], "url": r["url"]})
+                text = r["text"] or ""
+                self._json({"title": r["title"], "text": text, "links": r["links"][:80], "url": r["url"],
+                            "word_count": len(text.split())})
             elif u.path == "/search":
                 self._json({"query": q["q"][0], "results": web_search(q["q"][0], int(q.get("n", ["8"])[0]))})
             elif u.path == "/summarize":

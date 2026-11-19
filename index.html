@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WebReader — read any page, no browser</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background:#0d1117; color:#e6edf3; line-height:1.6; }
+  .wrap { max-width:760px; margin:0 auto; padding:2rem 1rem 4rem; }
+  h1 { font-size:1.6rem; margin:0 0 .25rem; }
+  .tag { color:#8b949e; margin:0 0 1.5rem; }
+  form { display:flex; gap:.5rem; margin-bottom:1.25rem; }
+  input[type=url] { flex:1; padding:.7rem .9rem; border-radius:8px; border:1px solid #30363d;
+                    background:#161b22; color:#e6edf3; font-size:1rem; }
+  button { padding:.7rem 1.2rem; border-radius:8px; border:1px solid #30363d; background:#238636;
+           color:#fff; font-weight:600; cursor:pointer; }
+  button.ghost { background:#21262d; }
+  .card { background:#161b22; border:1px solid #30363d; border-radius:12px; padding:1.25rem; margin-bottom:1rem; }
+  .meta { color:#8b949e; font-size:.85rem; margin-bottom:.75rem; }
+  .summary { white-space:pre-wrap; }
+  .links { margin:.5rem 0 0; padding-left:1.2rem; color:#8b949e; font-size:.9rem; }
+  .links a { color:#58a6ff; text-decoration:none; }
+  .err { color:#f85149; }
+  .spinner { color:#8b949e; }
+</style>
+</head>
+<body><div class="wrap">
+  <h1>WebReader</h1>
+  <p class="tag">Read any page without opening it: clean text, links, and an AI summary.</p>
+  <form id="f">
+    <input id="u" type="url" placeholder="https://example.com/article" required>
+    <button type="submit">Read</button>
+    <button type="button" class="ghost" id="sum">Summarize</button>
+  </form>
+  <div id="out"></div>
+</div>
+<script>
+const out = document.getElementById("out"), u = document.getElementById("u");
+function card(title, meta, body) {
+  return `<div class="card"><strong>${title || "(untitled)"}</strong><div class="meta">${meta}</div>${body}</div>`;
+}
+async function go(kind) {
+  if (!u.value) return;
+  out.innerHTML = '<p class="spinner">Fetching…</p>';
+  try {
+    const r = await fetch(`/api/${kind}?url=${encodeURIComponent(u.value)}`);
+    const d = await r.json();
+    if (d.error) { out.innerHTML = `<p class="err">${d.error}</p>`; return; }
+    const paras = (d.text || "").split(/\n\n|(?<=\.)\s{2}/).slice(0, 10).filter(Boolean).map(p => `<p>${p}</p>`).join("");
+    const links = (d.links || []).slice(0, 12).map(l => `<li><a href="${l[1]}">${l[0]}</a></li>`).join("");
+    const sum = d.bullets ? `<h3>AI summary</h3><ul>${d.bullets.map(b => `<li>${b}</li>`).join("")}</ul>` : "";
+    out.innerHTML = card(d.title, `${d.url} · ${d.word_count || ""} words`,
+      sum + paras + (links ? `<details><summary class="meta">${d.links.length} links</summary><ul class="links">${links}</ul></details>` : ""));
+  } catch (e) { out.innerHTML = `<p class="err">${e}</p>`; }
+}
+document.getElementById("f").addEventListener("submit", e => { e.preventDefault(); go("read"); });
+document.getElementById("sum").addEventListener("click", () => go("summarize"));
+</script>
+</body></html>

@@ -19,6 +19,26 @@ def summarize_local(text, n=5):
     top = sorted(sorted(scored, key=lambda x: -x[1])[:n], key=lambda x: x[0])
     return [s for _, _, s in top]
 
+COHERE_URL = "https://api.cohere.com/v2/chat"
+
+def summarize_cohere(text, n=5, model="command-a-03-2025"):
+    """LLM summary via Cohere (free trial key); returns list of bullet lines."""
+    key = os.environ.get("COHERE_API_KEY")
+    if not key:
+        raise RuntimeError("no COHERE_API_KEY")
+    body = json.dumps({
+        "model": model,
+        "messages": [{"role": "user", "content":
+            f"Summarize the following article into exactly {n} crisp bullet points, one fact per bullet, no preamble.\n\n{text[:12000]}"}]
+    }).encode()
+    req = urllib.request.Request(COHERE_URL, data=body, headers={
+        "Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        resp = json.load(r)
+    out = resp["message"]["content"][0]["text"]
+    lines = [re.sub(r"^[-*\u2022\d]+\.?\s*", "", ln).strip() for ln in out.splitlines() if ln.strip()]
+    return [ln for ln in lines if ln][:n]
+
 NEAR_URL = "https://inference.api.near.ai/v1/chat/completions"
 
 def summarize_near(text, n=5, model="deepseek-ai/DeepSeek-R1-Distill-Llama-8B"):
@@ -36,6 +56,10 @@ def summarize_near(text, n=5, model="deepseek-ai/DeepSeek-R1-Distill-Llama-8B"):
         return None
 
 def summarize(text, n=5):
+    try:
+        return summarize_cohere(text, n), "cohere"
+    except Exception:
+        pass
     out = summarize_near(text, n)
     if out:
         return out, "near-ai"
