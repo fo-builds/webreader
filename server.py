@@ -80,6 +80,6 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": str(e)}, 502)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("WEBREADER_PORT", "8017"))
+    port = int(os.environ.get("PORT") or os.environ.get("WEBREADER_PORT") or "8017")
     print(f"webreader api on :{port}", flush=True)
     ThreadingHTTPServer(("0.0.0.0", port), Handler).serve_forever()

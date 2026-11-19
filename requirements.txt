@@ -1,1 +1,4 @@
-clocked-sdk
+requests
+trafilatura
+lxml
+beautifulsoup4
