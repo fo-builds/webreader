@@ -45,7 +45,7 @@ async function go(kind) {
   if (!u.value) return;
   out.innerHTML = '<p class="spinner">Fetching…</p>';
   try {
-    const r = await fetch(`/api/${kind}?url=${encodeURIComponent(u.value)}`);
+    const r = await fetch(`/${kind}?url=${encodeURIComponent(u.value)}`);
     const d = await r.json();
     if (d.error) { out.innerHTML = `<p class="err">${d.error}</p>`; return; }
     const paras = (d.text || "").split(/\n\n|(?<=\.)\s{2}/).slice(0, 10).filter(Boolean).map(p => `<p>${p}</p>`).join("");
