@@ -2,3 +2,5 @@ requests
 trafilatura
 lxml
 beautifulsoup4
+reportlab
+telethon
