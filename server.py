@@ -52,8 +52,8 @@ class Handler(BaseHTTPRequestHandler):
                 text = r["text"] or ""
                 if not text:
                     return self._json({"error": "no readable text on that page", "title": r["title"], "url": r["url"]}, 422)
-                bullets = summarize(text, n=int(q.get("n", ["5"])[0]))
-                self._json({"title": r["title"], "bullets": bullets, "url": r["url"]})
+                bullets, model = summarize(text, n=int(q.get("n", ["5"])[0]))
+                self._json({"title": r["title"], "bullets": bullets, "url": r["url"], "word_count": len(text.split()), "model": model})
             elif u.path == "/pdf":
                 r = fetch(q["url"][0])
                 text = r["text"] or ""

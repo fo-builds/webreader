@@ -51,7 +51,7 @@ async function go(kind) {
     const paras = (d.text || "").split(/\n\n|(?<=\.)\s{2}/).slice(0, 10).filter(Boolean).map(p => `<p>${p}</p>`).join("");
     const links = (d.links || []).slice(0, 12).map(l => `<li><a href="${l[1]}">${l[0]}</a></li>`).join("");
     const sum = d.bullets ? `<h3>AI summary</h3><ul>${d.bullets.map(b => `<li>${b}</li>`).join("")}</ul>` : "";
-    out.innerHTML = card(d.title, `${d.url} · ${d.word_count || ""} words`,
+    out.innerHTML = card(d.title, `${d.url}${d.word_count ? " · " + d.word_count + " words" : ""}`,
       sum + paras + (links ? `<details><summary class="meta">${d.links.length} links</summary><ul class="links">${links}</ul></details>` : ""));
   } catch (e) { out.innerHTML = `<p class="err">${e}</p>`; }
 }
